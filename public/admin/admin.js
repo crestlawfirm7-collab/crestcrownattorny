@@ -17,4 +17,3 @@ $('#loadEnquiries').onclick=async()=>{try{const response=await fetch('/api/enqui
 
 
 
-$('#uploadMedia').onclick=async()=>{const file=$('#mediaFile').files?.[0];if(!file){status.textContent='Select an image first';return}if(file.size>3*1024*1024){status.textContent='Image must be under 3 MB';return}const form=new FormData();form.append('file',file);try{const response=await fetch('/api/media',{method:'POST',body:form});const result=await response.json();if(!response.ok)throw Error(result.error||'Upload failed');$('#imageUrl').value=result.url;status.textContent='Image uploaded. Save the content entry to use it.'}catch(error){status.textContent=error.message}};
