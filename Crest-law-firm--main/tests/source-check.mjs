@@ -1,0 +1,13 @@
+import {readFileSync,existsSync} from 'node:fs';
+import assert from 'node:assert/strict';
+const read=p=>readFileSync(p,'utf8');
+for(const path of ['index.html','src/main.js','public/admin/index.html','public/admin/admin.js','functions/_auth.js','functions/api/content.js','functions/api/sections.js','functions/api/enquiries.js','functions/api/media.js','functions/media/[[path]].js','migrations/0001_content.sql','migrations/0002_content_entities.sql'])assert.ok(existsSync(path),path+' missing');
+const main=read('src/main.js');
+assert.match(main,/renderPublishedCMS/);
+assert.match(main,/loadPublishedSections/);
+assert.match(main,/api\/enquiries/);
+assert.match(read('functions/api/content.js'),/verifyAdmin/);
+assert.match(read('functions/api/media.js'),/verifyAdmin/);
+assert.match(read('public/admin/index.html'),/entryForm/);
+assert.match(read('public/admin/admin.js'),/refreshEntries/);
+console.log('Source integration checks passed. These do not replace browser or Cloudflare integration tests.');

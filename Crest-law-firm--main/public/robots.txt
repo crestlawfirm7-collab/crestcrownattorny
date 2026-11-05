@@ -1,0 +1,3 @@
+User-agent: *
+Disallow: /
+# Development branch: remove block only after production review.
