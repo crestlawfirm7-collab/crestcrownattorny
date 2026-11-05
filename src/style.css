@@ -35,3 +35,6 @@ header{background:#0c2037}.header{max-width:1360px;min-height:84px;gap:24px;flex
 .brand-emblem .site-logo{width:100%;height:100%;object-fit:contain;display:block;border-radius:5px}
 
 .consultation-band{background:#0b2038;color:#fff;padding:60px 0}.consultation-band h2{font:36px Georgia,serif}.consultation-band p{max-width:680px;margin-bottom:30px}.consultation-band .header-cta{display:inline-block}
+
+/* Lawyer profile presentation */
+.team-card h2{font:26px Georgia,serif;margin:10px 0}.team-card h2 a{color:#10243b}.team-role{color:#8a602a;font-weight:700}.team-avatar{width:64px;height:64px;border-radius:50%;background:#10243b;color:#e8c488;display:grid;place-items:center;font:24px Georgia,serif}.profile-detail{max-width:1000px}.profile-detail h2{font:30px Georgia,serif;margin-top:30px}.profile-detail li{padding:8px 0;border-bottom:1px solid #e7e0d5;line-height:1.65}.profile-detail ul{padding-left:25px}
