@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS admin_login_limits (id TEXT PRIMARY KEY, attempts INTEGER NOT NULL DEFAULT 0, blocked_until INTEGER NOT NULL DEFAULT 0, updated_at INTEGER NOT NULL DEFAULT 0);
+CREATE INDEX IF NOT EXISTS admin_login_limits_updated ON admin_login_limits(updated_at);

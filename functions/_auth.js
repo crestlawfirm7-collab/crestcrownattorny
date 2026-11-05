@@ -1,15 +1,11 @@
-import {createRemoteJWKSet,jwtVerify} from 'jose';
-export async function verifyAdmin(request,env){
- const cookie=request.headers.get('Cookie')||'';
- const cookieToken=cookie.split(';').map(v=>v.trim()).find(v=>v.startsWith('CF_Authorization='))?.slice('CF_Authorization='.length);
- const token=request.headers.get('Cf-Access-Jwt-Assertion')||cookieToken;
- if(!token||!env.CF_ACCESS_TEAM_DOMAIN||!env.CF_ACCESS_AUD||!env.ADMIN_EMAILS)return false;
- try{
-  const issuer='https://'+env.CF_ACCESS_TEAM_DOMAIN.replace(/^https?:\/\//,'').replace(/\/$/,'');
-  const jwks=createRemoteJWKSet(new URL(issuer+'/cdn-cgi/access/certs'));
-  const {payload}=await jwtVerify(token,jwks,{issuer,audience:env.CF_ACCESS_AUD});
-  const email=String(payload.email||'').toLowerCase();
-  const allowed=env.ADMIN_EMAILS.split(',').map(s=>s.trim().toLowerCase());
-  return !!email&&allowed.includes(email);
- }catch{return false}
-}
+const encoder=new TextEncoder();
+const cookieName='crest_admin';
+const b64=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const from64=s=>Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
+async function key(env){if(!env.ADMIN_PASSWORD||env.ADMIN_PASSWORD.length<16)return null;const seed=await crypto.subtle.digest('SHA-256',encoder.encode('crest-admin-session-v1:'+env.ADMIN_PASSWORD));return crypto.subtle.importKey('raw',seed,{name:'HMAC',hash:'SHA-256'},false,['sign','verify'])}
+export async function issueSession(env){const k=await key(env);if(!k)throw Error('Admin password not configured');const expires=Date.now()+12*60*60*1000;const payload=b64(encoder.encode(JSON.stringify({exp:expires,nonce:crypto.randomUUID()})));const sig=b64(await crypto.subtle.sign('HMAC',k,encoder.encode(payload)));return payload+'.'+sig}
+export function sessionCookie(token,request){return cookieName+'='+token+'; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=43200'}
+export function clearSessionCookie(){return cookieName+'=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0'}
+export async function checkPassword(input,env){if(typeof input!=='string'||!env.ADMIN_PASSWORD||env.ADMIN_PASSWORD.length<16)return false;const a=new Uint8Array(await crypto.subtle.digest('SHA-256',encoder.encode(input)));const b=new Uint8Array(await crypto.subtle.digest('SHA-256',encoder.encode(env.ADMIN_PASSWORD)));let diff=0;for(let i=0;i<a.length;i++)diff|=a[i]^b[i];return diff===0}
+export function sameOrigin(request){const origin=request.headers.get('Origin');return !!origin&&origin===new URL(request.url).origin}
+export async function verifyAdmin(request,env){const method=request.method.toUpperCase();if(!['GET','HEAD','OPTIONS'].includes(method)&&!sameOrigin(request))return false;const k=await key(env);if(!k)return false;const raw=(request.headers.get('Cookie')||'').split(';').map(s=>s.trim()).find(s=>s.startsWith(cookieName+'='));const token=raw?.slice(cookieName.length+1);if(!token)return false;const parts=token.split('.');if(parts.length!==2)return false;try{const valid=await crypto.subtle.verify('HMAC',k,from64(parts[1]),encoder.encode(parts[0]));if(!valid)return false;const data=JSON.parse(new TextDecoder().decode(from64(parts[0])));return typeof data.exp==='number'&&data.exp>Date.now()&&data.exp<Date.now()+43200001&&typeof data.nonce==='string'}catch{return false}}

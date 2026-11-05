@@ -1,2 +1,11 @@
-import {verifyAdmin} from '../_auth.js';
-export async function onRequestGet({request,env}){const authorized=await verifyAdmin(request,env);return Response.json({authorized},{status:authorized?200:401,headers:{'Cache-Control':'no-store'}})}
+import {verifyAdmin,checkPassword,issueSession,sessionCookie,clearSessionCookie,sameOrigin} from '../_auth.js';
+const json=(body,status=200,headers={})=>Response.json(body,{status,headers:{'Cache-Control':'no-store',...headers}});
+export async function onRequestGet({request,env}){const authorized=await verifyAdmin(request,env);return json({authorized},authorized?200:401)}
+export async function onRequestPost({request,env}){if(!sameOrigin(request))return json({error:'Invalid origin'},403);if(!env.ADMIN_PASSWORD||env.ADMIN_PASSWORD.length<16)return json({error:'Admin password secret missing or too short (minimum 16 characters)'},503);if(!env.DB)return json({error:'D1 database unavailable'},503);
+ const ip=request.headers.get('CF-Connecting-IP')||'unknown';const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('login-rate:'+ip+':'+env.ADMIN_PASSWORD));const key=Array.from(new Uint8Array(digest)).map(x=>x.toString(16).padStart(2,'0')).join('');
+ let record;try{record=await env.DB.prepare('SELECT attempts,blocked_until FROM admin_login_limits WHERE id=?').bind(key).first()}catch{return json({error:'Login protection not initialized. Apply migration 0003_admin_login.sql'},503)}
+ const now=Math.floor(Date.now()/1000);if(record?.blocked_until>now)return json({error:'Too many attempts. Try again later.'},429);
+ const data=await request.json().catch(()=>null);const password=data?.password;
+ if(!await checkPassword(password,env)){const attempts=(record?.attempts||0)+1;const blocked=attempts>=5?now+900:0;await env.DB.prepare('INSERT INTO admin_login_limits(id,attempts,blocked_until,updated_at) VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET attempts=excluded.attempts,blocked_until=excluded.blocked_until,updated_at=excluded.updated_at').bind(key,attempts,blocked,now).run();return json({error:blocked?'Too many attempts. Try again in 15 minutes.':'Incorrect password'},blocked?429:401)}
+ await env.DB.prepare('DELETE FROM admin_login_limits WHERE id=?').bind(key).run();const token=await issueSession(env);return json({authorized:true},200,{'Set-Cookie':sessionCookie(token,request)})}
+export async function onRequestDelete({request}){if(!sameOrigin(request))return json({error:'Invalid origin'},403);return json({authorized:false},200,{'Set-Cookie':clearSessionCookie()})}
