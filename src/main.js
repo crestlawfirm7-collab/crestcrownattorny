@@ -91,3 +91,22 @@ if(path==='/contact'||path==='/consultation'){
  let widgetId;const submit=form.querySelector('button');submit.disabled=true;
  fetch('/api/public-config').then(r=>r.json()).then(({turnstileSiteKey})=>{if(!turnstileSiteKey)throw Error('Enquiry verification not configured');const slot=document.createElement('div');form.insertBefore(slot,submit);const script=document.createElement('script');script.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';script.async=true;script.onload=()=>{widgetId=window.turnstile.render(slot,{sitekey:turnstileSiteKey,callback:()=>{submit.disabled=false},'expired-callback':()=>{submit.disabled=true}})};document.head.append(script)}).catch(()=>{form.querySelector('[role="status"]').textContent='Enquiry form is not yet available. Please use the firm’s verified contact channels.'});
 }
+
+// Public site settings, editable through the admin dashboard.
+(async function applySiteSettings(){
+ try{
+  const r=await fetch('/api/site-settings');if(!r.ok)return;const {settings:s={}}=await r.json();
+  const val=k=>typeof s[k]==='string'?s[k].trim():'';
+  const setText=(el,v)=>{if(el&&v)el.textContent=v};
+  const hero=document.querySelector('.intro');
+  const heroKey=path==='/'?'home':path==='/about'?'about':path==='/practice-areas'?'practice':path==='/team'?'team':path==='/insights'?'insights':path==='/careers'?'careers':path==='/contact'||path==='/consultation'?'contact':null;
+  if(heroKey){setText(hero?.querySelector('.lead'),val(heroKey+'_intro')||val(heroKey+'_description'));if(path==='/'){setText(hero?.querySelector('h1'),val('home_title'));setText(hero?.querySelector('.eyebrow'),val('home_eyebrow'));if(val('home_banner_url')){hero.style.backgroundImage='linear-gradient(90deg,rgba(16,36,59,.92),rgba(16,36,59,.6)),url('+JSON.stringify(val('home_banner_url')).slice(1,-1)+')';hero.style.backgroundSize='cover';hero.style.backgroundPosition='center'}}}
+  if(path==='/'){setText(document.querySelector('.band h2'),val('home_highlight_title'));setText(document.querySelector('.band p'),val('home_highlight_body'));if(val('seo_home_title'))document.title=val('seo_home_title');if(val('seo_home_description'))document.querySelector('meta[name="description"]').content=val('seo_home_description')}
+  if(path==='/about')setText(document.querySelector('main .section p'),val('about_approach'));
+  if(path==='/careers')setText(document.querySelector('main .section p'),val('careers_body'));
+  if(path==='/contact'||path==='/consultation'){const contact=document.querySelector('main .section p');if(contact&&val('contact_office'))contact.textContent='Office: '+val('contact_office');const sec=document.querySelector('main .section');for(const [label,key] of [['Email','contact_email'],['Phone','contact_phone']])if(val(key)&&sec){const p=document.createElement('p');p.textContent=label+': '+val(key);sec.append(p)}}
+  setText(document.querySelector('footer p'),val('footer_description'));setText(document.querySelector('footer small'),val('footer_disclaimer'));
+  if(val('brand_name'))setText(document.querySelector('header .brand'),val('brand_name'));
+  if(val('brand_logo_url')){const img=document.createElement('img');img.src=val('brand_logo_url');img.alt=val('brand_name')||'Crest Crown Attorneys';img.style.cssText='max-width:190px;max-height:65px;object-fit:contain';document.querySelector('header .brand')?.replaceChildren(img)}
+ }catch(e){console.warn('Website settings unavailable',e)}
+})();
