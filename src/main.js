@@ -123,6 +123,14 @@ const menuToggle=document.querySelector(".menu-toggle");menuToggle?.addEventList
    if(path!==url)continue;
    const hero=main.querySelector('.intro');
    if(hero){const h=hero.querySelector('h1'),p=hero.querySelector('.lead');if(h)h.textContent=entry.title;if(p&&entry.summary)p.textContent=entry.summary}
+   if(entry.kind==='team'&&entry.image_url){
+    const heading=main.querySelector('.intro .wrap');
+    if(heading){
+     const portrait=document.createElement('img');portrait.src=entry.image_url;portrait.alt='Portrait of '+entry.title;
+     portrait.loading='lazy';portrait.className='profile-heading-photo';
+     heading.append(portrait);
+    }
+   }
    const content=main.querySelector('.practice-detail>div,.profile-detail');
    if(content){
     if(entry.kind==='practice'){

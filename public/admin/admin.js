@@ -126,6 +126,24 @@ async function refreshTeam(){
   const p=document.createElement('p');p.textContent='Order '+(parseTeamBody(entry.body).order??50)+' • '+(entry.summary||'')+' • '+(entry.published?'Published':entry.id?'Draft':'Original site profile');
   const edit=document.createElement('button');edit.textContent='Edit';edit.onclick=()=>editTeam(entry);
   row.append(h,p,edit);
+  const photoLabel=document.createElement('label');photoLabel.textContent='Upload portrait for '+entry.title;
+  photoLabel.style.cssText='display:inline-block;margin:8px 10px 8px 0;font-size:13px';
+  const photoInput=document.createElement('input');photoInput.type='file';photoInput.accept='image/jpeg,image/png,image/webp';
+  photoInput.style.cssText='max-width:230px;font-size:12px;padding:5px';
+  const uploadBtn=document.createElement('button');uploadBtn.type='button';uploadBtn.textContent='Save portrait';
+  uploadBtn.onclick=async()=>{
+   if(!photoInput.files[0]){status.textContent='Choose a portrait image first.';return}
+   uploadBtn.disabled=true;
+   try{
+    const data=new FormData();data.append('image',await prepareSiteImage(photoInput.files[0]));
+    const response=await fetch('/api/media',{method:'POST',body:data,credentials:'same-origin'});
+    const uploaded=await readApiJson(response);
+    await contentRequest('POST',{id:entry.id||undefined,kind:'team',slug:entry.slug,title:entry.title,summary:entry.summary||'',body:entry.body||'',image_url:uploaded.url,seo_title:entry.seo_title||'',seo_description:entry.seo_description||'',published:entry.id?!!entry.published:true});
+    status.textContent='Portrait saved for '+entry.title+'.';
+    await refreshTeam();await refreshEntries();
+   }catch(e){status.textContent=e.message}finally{uploadBtn.disabled=false}
+  };
+  photoLabel.append(photoInput);row.append(photoLabel,uploadBtn);
   if(entry.id){
    const toggle=document.createElement('button');toggle.textContent=entry.published?'Unpublish':'Publish';
    toggle.onclick=async()=>{try{await contentRequest('POST',{...entry,published:!entry.published});await refreshTeam()}catch(e){status.textContent=e.message}};
