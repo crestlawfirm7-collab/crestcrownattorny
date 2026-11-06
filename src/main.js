@@ -51,7 +51,7 @@ const menuToggle=document.querySelector(".menu-toggle");menuToggle?.addEventList
    const article=document.createElement('article');article.className='card';article.style.marginBottom='20px';
    const heading=document.createElement('h2');heading.textContent=item.title;
    const text=document.createElement('p');text.textContent=item.body;text.style.whiteSpace='pre-wrap';
-   article.append(heading,text);target.append(article);
+   if(item.image_url){const photo=document.createElement('img');photo.src=item.image_url;photo.alt=item.title;photo.loading='lazy';photo.style.cssText='max-width:100%;height:auto;border-radius:8px';article.append(photo)}article.append(heading,text);target.append(article);
   }
   document.querySelector('main')?.append(target);
  }catch(error){console.warn('Custom content unavailable',error)}

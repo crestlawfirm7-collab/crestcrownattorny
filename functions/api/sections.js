@@ -7,7 +7,7 @@ export async function onRequestGet({env,request}) {
  const page=url.searchParams.get('page');
  const admin=await verifyAdmin(request,env);
  if(url.searchParams.has('admin')&&!admin)return Response.json({error:'Unauthorized'},{status:401});
- let query='SELECT id,page,title,body,sort_order,published FROM sections';
+ let query='SELECT id,page,title,body,image_url,sort_order,published FROM sections';
  const filters=[],values=[];
  if(page){filters.push('page=?');values.push(page)}
  if(!admin)filters.push('published=1');
@@ -20,18 +20,18 @@ export async function onRequestPost({env,request}){
  if(!await verifyAdmin(request,env))return Response.json({error:'Unauthorized'},{status:401});
  if(!env.DB)return Response.json({error:'D1 not configured'},{status:503});
  let data;try{data=await request.json()}catch{return Response.json({error:'Invalid JSON'},{status:400})}
- const page=clean(data.page),title=clean(data.title),body=clean(data.body);
- if(!allowedPages.includes(page)||title.length<2||title.length>120||body.length>8000)return Response.json({error:'Invalid section fields'},{status:400});
+ const page=clean(data.page),title=clean(data.title),body=clean(data.body),image=clean(data.image_url);
+ if(!allowedPages.includes(page)||title.length<2||title.length>120||body.length>8000||image.length>500||image&&!(image.startsWith('/')||image.startsWith('https://')))return Response.json({error:'Invalid section fields'},{status:400});
  const id=crypto.randomUUID(),order=Math.max(0,Math.min(9999,Number(data.sort_order)||0));
- await env.DB.prepare('INSERT INTO sections (id,page,title,body,sort_order,published) VALUES (?,?,?,?,?,0)').bind(id,page,title,body,order).run();
+ await env.DB.prepare('INSERT INTO sections (id,page,title,body,image_url,sort_order,published) VALUES (?,?,?,?,?,?,0)').bind(id,page,title,body,image,order).run();
  return Response.json({id,published:false},{status:201});
 }
 export async function onRequestPut({env,request}){
  if(!await verifyAdmin(request,env))return Response.json({error:'Unauthorized'},{status:401});
  if(!env.DB)return Response.json({error:'D1 not configured'},{status:503});
  let d;try{d=await request.json()}catch{return Response.json({error:'Invalid JSON'},{status:400})}
- if(typeof d.id!=='string'||d.id.length>80||!allowedPages.includes(clean(d.page))||clean(d.title).length<2||clean(d.title).length>120||clean(d.body).length>8000)return Response.json({error:'Invalid section fields'},{status:400});
- const result=await env.DB.prepare('UPDATE sections SET page=?,title=?,body=?,sort_order=?,published=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(clean(d.page),clean(d.title),clean(d.body),Math.max(0,Math.min(9999,Number(d.sort_order)||0)),d.published===true?1:0,d.id).run();
+ if(typeof d.id!=='string'||d.id.length>80||!allowedPages.includes(clean(d.page))||clean(d.title).length<2||clean(d.title).length>120||clean(d.body).length>8000||clean(d.image_url).length>500)return Response.json({error:'Invalid section fields'},{status:400});
+ const result=await env.DB.prepare('UPDATE sections SET page=?,title=?,body=?,image_url=?,sort_order=?,published=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(clean(d.page),clean(d.title),clean(d.body),clean(d.image_url),Math.max(0,Math.min(9999,Number(d.sort_order)||0)),d.published===true?1:0,d.id).run();
  return Response.json({updated:result.meta.changes>0});
 }
 export async function onRequestDelete({env,request}){
