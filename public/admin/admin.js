@@ -1,3 +1,26 @@
+
+/* Compress images before uploading to same-domain storage. Original files never go to third-party hosts. */
+async function prepareSiteImage(file){
+ if(!file)throw Error('Choose an image first.');
+ if(!['image/jpeg','image/png','image/webp'].includes(file.type))throw Error('Use JPEG, PNG or WebP.');
+ if(file.size<=900000)return file;
+ const bitmap=await createImageBitmap(file);
+ try{
+  const canvas=document.createElement('canvas');
+  const ratio=Math.min(1,1800/Math.max(bitmap.width,bitmap.height));
+  canvas.width=Math.max(1,Math.round(bitmap.width*ratio));
+  canvas.height=Math.max(1,Math.round(bitmap.height*ratio));
+  const ctx=canvas.getContext('2d');
+  if(!ctx)throw Error('Image processing is unavailable.');
+  ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);
+  for(const quality of [.82,.7,.58,.45]){
+   const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/webp',quality));
+   if(blob&&blob.size<=900000)return new File([blob],file.name.replace(/\.[^.]+$/,'')+'.webp',{type:'image/webp'});
+  }
+  throw Error('Image is too large. Resize it before uploading.');
+ }finally{bitmap.close?.()}
+}
+
 const $=s=>document.querySelector(s),status=$('#status'),editor=$('#editor'),list=$('#sections');
 const request=async(method='GET',body)=>{const r=await fetch('/api/sections?admin=1',{method,headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined,credentials:'same-origin'});const d=await r.json();if(!r.ok)throw Error(d.error||'Request failed');return d};
 async function load(){try{const d=await request();list.replaceChildren();for(const item of d.sections){const div=document.createElement('div');div.className='item';const h=document.createElement('h3');h.textContent=item.title;const p=document.createElement('p');p.textContent=item.page+' • '+(item.published?'Published':'Draft')+' • '+item.body.slice(0,180);const toggle=document.createElement('button');toggle.textContent=item.published?'Unpublish':'Publish';toggle.onclick=async()=>{try{await request('PUT',{...item,published:!item.published});await load()}catch(e){status.textContent=e.message}};const del=document.createElement('button');del.textContent='Delete';del.onclick=async()=>{if(!confirm('Delete this section?'))return;try{await request('DELETE',{id:item.id});await load()}catch(e){status.textContent=e.message}};div.append(h,p,toggle,del);list.append(div)}if(!d.sections.length)list.textContent='No custom sections yet.'}catch(e){status.textContent=e.message}}
@@ -22,10 +45,10 @@ const settingsKeys=["home_eyebrow","home_title","home_description","home_banner_
 async function loadSettings(){try{const r=await fetch('/api/site-settings?admin=1',{credentials:'same-origin'});if(!r.ok)throw Error('Could not load website settings');const d=await r.json();for(const key of settingsKeys)$('#setting_'+key).value=d.settings?.[key]||''}catch(e){status.textContent=e.message}}
 $('#settingsForm').addEventListener('submit',async e=>{e.preventDefault();const settings={};for(const key of settingsKeys)settings[key]=$('#setting_'+key).value;try{const r=await fetch('/api/site-settings',{method:'PUT',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({settings})});const d=await r.json();if(!r.ok)throw Error(d.error||'Save failed');status.textContent='Website settings saved and published.'}catch(e){status.textContent=e.message}});
 
-function useMedia(url){const key=$('#mediaTarget').value;const input=$('#'+(key==='imageUrl'?'imageUrl':'setting_'+key));input.value=url;input.scrollIntoView({behavior:'smooth',block:'center'});$('#mediaStatus').textContent='Image selected. Save the relevant settings or content entry to publish.'}
+function useMedia(url){const key=$('#mediaTarget').value;const input=$('#'+(key==='imageUrl'?'imageUrl':'setting_'+key));input.value=url;input.scrollIntoView({behavior:'smooth',block:'center'});$('#mediaStatus').textContent='Image stored on this website domain. Save the relevant settings or content entry to publish.'}
 async function loadMedia(){const root=$('#mediaLibrary');try{const r=await fetch('/api/media',{credentials:'same-origin'});const d=await r.json();if(!r.ok)throw Error(d.error||'Unable to load media');root.replaceChildren();for(const item of d.assets){const row=document.createElement('div');row.className='item';const img=document.createElement('img');img.src='/api/media/'+item.id;img.alt=item.filename;img.style.cssText='width:110px;height:85px;object-fit:cover;vertical-align:middle;margin-right:12px';const btn=document.createElement('button');btn.type='button';btn.textContent='Use image';btn.onclick=()=>useMedia(img.getAttribute('src'));row.append(img,document.createTextNode(item.filename+' '),btn);root.append(row)}if(!d.assets.length)root.textContent='No images uploaded.'}catch(e){root.textContent=e.message}}
-$('#mediaForm').addEventListener('submit',async e=>{e.preventDefault();const button=$('#uploadMedia');button.disabled=true;try{const form=new FormData();form.append('image',$('#mediaFile').files[0]);const r=await fetch('/api/media',{method:'POST',body:form,credentials:'same-origin'});const d=await r.json();if(!r.ok)throw Error(d.error||'Upload failed');useMedia(d.url);$('#mediaFile').value='';await loadMedia()}catch(e){$('#mediaStatus').textContent=e.message}finally{button.disabled=false}});
+$('#mediaForm').addEventListener('submit',async e=>{e.preventDefault();const button=$('#uploadMedia');button.disabled=true;try{const form=new FormData();form.append('image',await prepareSiteImage($('#mediaFile').files[0]));const r=await fetch('/api/media',{method:'POST',body:form,credentials:'same-origin'});const d=await r.json();if(!r.ok)throw Error(d.error||'Upload failed');useMedia(d.url);$('#mediaFile').value='';await loadMedia()}catch(e){$('#mediaStatus').textContent=e.message}finally{button.disabled=false}});
 
-async function uploadSelectedImage(input){const file=input.files?.[0];if(!file)return;const button=document.querySelector('[data-media-upload="'+input.dataset.uploadFor+'"]');button.disabled=true;try{const form=new FormData();form.append('image',file);const r=await fetch('/api/media',{method:'POST',body:form,credentials:'same-origin'});const d=await r.json();if(!r.ok)throw Error(d.error||'Upload failed');const field=document.getElementById(input.dataset.uploadFor);field.value=d.url;const preview=document.querySelector('[data-preview-for="'+input.dataset.uploadFor+'"]');preview.src=d.url;preview.style.display='block';status.textContent='Image uploaded. Save this section or article to publish.';await loadMedia()}catch(e){status.textContent=e.message}finally{button.disabled=false}}
+async function uploadSelectedImage(input){const file=input.files?.[0];if(!file)return;const button=document.querySelector('[data-media-upload="'+input.dataset.uploadFor+'"]');button.disabled=true;try{const form=new FormData();form.append('image',await prepareSiteImage(file));const r=await fetch('/api/media',{method:'POST',body:form,credentials:'same-origin'});const d=await r.json();if(!r.ok)throw Error(d.error||'Upload failed');const field=document.getElementById(input.dataset.uploadFor);field.value=d.url;const preview=document.querySelector('[data-preview-for="'+input.dataset.uploadFor+'"]');preview.src=d.url;preview.style.display='block';status.textContent='Image uploaded. Save this section or article to publish.';await loadMedia()}catch(e){status.textContent=e.message}finally{button.disabled=false}}
 document.querySelectorAll('[data-media-upload]').forEach(button=>button.addEventListener('click',()=>uploadSelectedImage(document.querySelector('[data-upload-for="'+button.dataset.mediaUpload+'"]'))));
 document.querySelectorAll('[data-preview-for]').forEach(img=>{const field=document.getElementById(img.dataset.previewFor);const show=()=>{const url=field.value.trim();img.style.display=url?'block':'none';if(url)img.src=url};field.addEventListener('input',show);show()});
