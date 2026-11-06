@@ -100,8 +100,8 @@ function editTeam(entry){
  teamFields.slug.value=entry.slug;
  teamFields.role.value=entry.slug==='eloho'?'Founder & Principal Counsel':entry.summary||'';
  const body=parseTeamBody(entry.body);
- teamFields.qualifications.value=(body.qualifications||[]).join('\n');
- teamFields.affiliations.value=(body.affiliations||[]).join('\n');
+ teamFields.qualifications.value=(body.qualifications?.length?body.qualifications:(entry.slug==='eloho'?["LL.B. (Bachelor of Laws) — Delta State University, Faculty of Law, Oleh Campus (degree award to be confirmed)","B.L. (Barrister-at-Law) — Nigerian Law School (institution and qualification to be confirmed)"]:[])).join('\n');
+ teamFields.affiliations.value=(body.affiliations?.length?body.affiliations:(entry.slug==='eloho'?['Legal Practitioner — Nigeria','Additional professional certifications — awaiting confirmation']:[])).join('\n');
  teamFields.specialisations.value=(body.specialisations||[]).join('\n');
  teamFields.biography.value=body.biography||'';
  teamFields.order.value=Number.isInteger(body.order)?body.order:50;
