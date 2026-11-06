@@ -85,7 +85,7 @@ document.querySelectorAll('[data-preview-for]').forEach(img=>{const field=docume
 const teamFields={id:$('#teamId'),name:$('#teamName'),slug:$('#teamSlug'),role:$('#teamRole'),qualifications:$('#teamQualifications'),affiliations:$('#teamAffiliations'),specialisations:$('#teamSpecialisations'),biography:$('#teamBiography'),order:$('#teamOrder'),image:$('#teamImageUrl'),seoTitle:$('#teamSeoTitle'),seoDescription:$('#teamSeoDescription'),published:$('#teamPublished')};
 const originalTeam=[
  {slug:'glory-toritseju-kunu',name:'Glory Toritseju Kunu',role:'Legal Associate — Corporate Practice & Property Law'},
- {slug:'eloho',name:'Eloho',role:'Partner — Corporate, Regulatory & Dispute Resolution Practice'},
+ {slug:'eloho',name:'Eloho Avwaruroro-Okoye, Esq.',role:'Founder & Principal Counsel'},
  {slug:'ejeremedoghene-ejiroghene',name:'Ejeremedoghene Ejiroghene',role:'Family Law'}
 ];
 const parseTeamBody=body=>{try{const obj=JSON.parse(body||'{}');if(obj&&typeof obj==='object'&&!Array.isArray(obj))return obj}catch{}return {biography:body||''}};
@@ -98,7 +98,7 @@ function editTeam(entry){
  teamFields.id.value=entry.id||'';
  teamFields.name.value=entry.title||'';
  teamFields.slug.value=entry.slug;
- teamFields.role.value=entry.summary||'';
+ teamFields.role.value=entry.slug==='eloho'?'Founder & Principal Counsel':entry.summary||'';
  const body=parseTeamBody(entry.body);
  teamFields.qualifications.value=(body.qualifications||[]).join('\n');
  teamFields.affiliations.value=(body.affiliations||[]).join('\n');
@@ -118,7 +118,7 @@ async function refreshTeam(){
  for(const base of originalTeam){
   if(!records.some(x=>x.slug===base.slug))records.push({kind:'team',slug:base.slug,title:base.name,summary:base.role,body:'',published:0,image_url:''});
  }
- records.sort((a,b)=>{const order=x=>{const o=parseTeamBody(x.body).order;return Number.isInteger(o)?o:50};return order(a)-order(b)||a.title.localeCompare(b.title)});
+ records.sort((a,b)=>{const order=x=>{const o=parseTeamBody(x.body).order;return x.slug==='eloho'?-100:Number.isInteger(o)?o:50};return order(a)-order(b)||a.title.localeCompare(b.title)});
  for(const entry of records){
   const row=document.createElement('div');row.className='item';
   if(entry.image_url){const img=document.createElement('img');img.src=entry.image_url;img.alt=entry.title;img.style.cssText='width:68px;height:75px;object-fit:cover;float:left;margin-right:14px';row.append(img)}
