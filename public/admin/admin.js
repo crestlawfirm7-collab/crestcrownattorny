@@ -37,7 +37,7 @@ const $=s=>document.querySelector(s),status=$('#status'),editor=$('#editor'),lis
 const request=async(method='GET',body)=>{const r=await fetch('/api/sections?admin=1',{method,headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined,credentials:'same-origin'});const d=await readApiJson(r);return d};
 async function load(){try{const d=await request();list.replaceChildren();for(const item of d.sections){const div=document.createElement('div');div.className='item';const h=document.createElement('h3');h.textContent=item.title;const p=document.createElement('p');p.textContent=item.page+' • '+(item.published?'Published':'Draft')+' • '+item.body.slice(0,180);const toggle=document.createElement('button');toggle.textContent=item.published?'Unpublish':'Publish';toggle.onclick=async()=>{try{await request('PUT',{...item,published:!item.published});await load()}catch(e){status.textContent=e.message}};const del=document.createElement('button');del.textContent='Delete';del.onclick=async()=>{if(!confirm('Delete this section?'))return;try{await request('DELETE',{id:item.id});await load()}catch(e){status.textContent=e.message}};div.append(h,p,toggle,del);list.append(div)}if(!d.sections.length)list.textContent='No custom sections yet.'}catch(e){status.textContent=e.message}}
 $('#sectionForm').onsubmit=async e=>{e.preventDefault();try{await request('POST',{page:$('#page').value,title:$('#title').value,body:$('#body').value,image_url:$('#sectionImage').value,sort_order:Number($('#order').value)});e.target.reset();status.textContent='Draft saved.';await load()}catch(err){status.textContent=err.message}};
-async function checkSession(){try{const r=await fetch('/api/admin-session',{credentials:'same-origin',cache:'no-store'});await readApiJson(r);$('#loginPanel').hidden=true;$('#logout').hidden=false;editor.hidden=false;status.textContent='Administrator signed in';await load();await refreshEntries();await loadSettings();await loadMedia()}catch(e){editor.hidden=true;$('#loginPanel').hidden=false;$('#logout').hidden=true;status.textContent=e.message.includes('session')||e.message.includes('Unauthorized')?'Enter your administrator password to continue.':e.message}}
+async function checkSession(){try{const r=await fetch('/api/admin-session',{credentials:'same-origin',cache:'no-store'});await readApiJson(r);$('#loginPanel').hidden=true;$('#logout').hidden=false;editor.hidden=false;status.textContent='Administrator signed in';await load();await refreshEntries();await refreshTeam();await loadSettings();await loadMedia()}catch(e){editor.hidden=true;$('#loginPanel').hidden=false;$('#logout').hidden=true;status.textContent=e.message.includes('session')||e.message.includes('Unauthorized')?'Enter your administrator password to continue.':e.message}}
 $('#loginForm').addEventListener('submit',async e=>{e.preventDefault();const btn=$('#loginButton');btn.disabled=true;status.textContent='Signing in…';try{const r=await fetch('/api/admin-session',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({password:$('#adminPassword').value})});const d=await readApiJson(r);$('#adminPassword').value='';await checkSession()}catch(error){status.textContent=error.message}finally{btn.disabled=false}});
 $('#logout').onclick=async()=>{await fetch('/api/admin-session',{method:'DELETE',credentials:'same-origin'});await checkSession()};
 checkSession();
@@ -79,3 +79,69 @@ $('#mediaForm').addEventListener('submit',async e=>{e.preventDefault();const but
 async function uploadSelectedImage(input){const file=input.files?.[0];if(!file)return;const button=document.querySelector('[data-media-upload="'+input.dataset.uploadFor+'"]');button.disabled=true;try{const form=new FormData();form.append('image',await prepareSiteImage(file));const r=await fetch('/api/media',{method:'POST',body:form,credentials:'same-origin'});const d=await readApiJson(r);const field=document.getElementById(input.dataset.uploadFor);field.value=d.url;const preview=document.querySelector('[data-preview-for="'+input.dataset.uploadFor+'"]');preview.src=d.url;preview.style.display='block';status.textContent='Image uploaded. Save this section or article to publish.';await loadMedia()}catch(e){status.textContent=e.message}finally{button.disabled=false}}
 document.querySelectorAll('[data-media-upload]').forEach(button=>button.addEventListener('click',()=>uploadSelectedImage(document.querySelector('[data-upload-for="'+button.dataset.mediaUpload+'"]'))));
 document.querySelectorAll('[data-preview-for]').forEach(img=>{const field=document.getElementById(img.dataset.previewFor);const show=()=>{const url=field.value.trim();img.style.display=url?'block':'none';if(url)img.src=url};field.addEventListener('input',show);show()});
+
+
+/* Dedicated team editor, backed by the existing authenticated CMS and media API. */
+const teamFields={id:$('#teamId'),name:$('#teamName'),slug:$('#teamSlug'),role:$('#teamRole'),qualifications:$('#teamQualifications'),affiliations:$('#teamAffiliations'),specialisations:$('#teamSpecialisations'),biography:$('#teamBiography'),image:$('#teamImageUrl'),seoTitle:$('#teamSeoTitle'),seoDescription:$('#teamSeoDescription'),published:$('#teamPublished')};
+const originalTeam=[
+ {slug:'glory-toritseju-kunu',name:'Glory Toritseju Kunu',role:'Legal Associate — Corporate Practice & Property Law'},
+ {slug:'eloho',name:'Eloho',role:'Partner — Corporate, Regulatory & Dispute Resolution Practice'},
+ {slug:'ejeremedoghene-ejiroghene',name:'Ejeremedoghene Ejiroghene',role:'Family Law'}
+];
+const parseTeamBody=body=>{try{const obj=JSON.parse(body||'{}');if(obj&&typeof obj==='object'&&!Array.isArray(obj))return obj}catch{}return {biography:body||''}};
+const lines=value=>value.split('\n').map(s=>s.trim()).filter(Boolean);
+const teamPreview=url=>{teamFields.image.value=url||'';const img=$('#teamPhotoPreview');img.style.display=url?'block':'none';if(url)img.src=url};
+function resetTeam(){ $('#teamForm').reset();teamFields.id.value='';teamPreview('') }
+$('#resetTeam').onclick=resetTeam;
+function editTeam(entry){
+ resetTeam();
+ teamFields.id.value=entry.id||'';
+ teamFields.name.value=entry.title||'';
+ teamFields.slug.value=entry.slug;
+ teamFields.role.value=entry.summary||'';
+ const body=parseTeamBody(entry.body);
+ teamFields.qualifications.value=(body.qualifications||[]).join('\n');
+ teamFields.affiliations.value=(body.affiliations||[]).join('\n');
+ teamFields.specialisations.value=(body.specialisations||[]).join('\n');
+ teamFields.biography.value=body.biography||'';
+ teamFields.seoTitle.value=entry.seo_title||'';
+ teamFields.seoDescription.value=entry.seo_description||'';
+ teamFields.published.checked=!!entry.published;
+ teamPreview(entry.image_url);
+ $('#teamForm').scrollIntoView({behavior:'smooth',block:'start'});
+}
+async function refreshTeam(){
+ const root=$('#teamEntries');root.replaceChildren();
+ const data=await contentRequest();
+ const records=data.entries.filter(x=>x.kind==='team');
+ for(const base of originalTeam){
+  if(!records.some(x=>x.slug===base.slug))records.push({kind:'team',slug:base.slug,title:base.name,summary:base.role,body:'',published:0,image_url:''});
+ }
+ records.sort((a,b)=>a.title.localeCompare(b.title));
+ for(const entry of records){
+  const row=document.createElement('div');row.className='item';
+  if(entry.image_url){const img=document.createElement('img');img.src=entry.image_url;img.alt=entry.title;img.style.cssText='width:68px;height:75px;object-fit:cover;float:left;margin-right:14px';row.append(img)}
+  const h=document.createElement('h3');h.textContent=entry.title;
+  const p=document.createElement('p');p.textContent=(entry.summary||'')+' • '+(entry.published?'Published':entry.id?'Draft':'Original site profile');
+  const edit=document.createElement('button');edit.textContent='Edit';edit.onclick=()=>editTeam(entry);
+  row.append(h,p,edit);
+  if(entry.id){
+   const toggle=document.createElement('button');toggle.textContent=entry.published?'Unpublish':'Publish';
+   toggle.onclick=async()=>{try{await contentRequest('POST',{...entry,published:!entry.published});await refreshTeam()}catch(e){status.textContent=e.message}};
+   const del=document.createElement('button');del.textContent='Delete';del.onclick=async()=>{if(!confirm('Delete this team profile?'))return;try{await contentRequest('DELETE',{id:entry.id});await refreshTeam()}catch(e){status.textContent=e.message}};
+   row.append(toggle,del);
+  }
+  root.append(row);
+ }
+}
+$('#teamForm').addEventListener('submit',async e=>{
+ e.preventDefault();const btn=$('#saveTeam');btn.disabled=true;
+ try{
+  let photo=teamFields.image.value;
+  const file=$('#teamPhoto').files[0];
+  if(file){const data=new FormData();data.append('image',await prepareSiteImage(file));const upload=await fetch('/api/media',{method:'POST',body:data,credentials:'same-origin'});photo=(await readApiJson(upload)).url}
+  const data={id:teamFields.id.value||undefined,kind:'team',slug:teamFields.slug.value.trim().toLowerCase(),title:teamFields.name.value.trim(),summary:teamFields.role.value.trim(),image_url:photo,seo_title:teamFields.seoTitle.value,seo_description:teamFields.seoDescription.value,published:teamFields.published.checked,body:JSON.stringify({qualifications:lines(teamFields.qualifications.value),affiliations:lines(teamFields.affiliations.value),specialisations:lines(teamFields.specialisations.value),biography:teamFields.biography.value.trim()})};
+  await contentRequest('POST',data);status.textContent='Team profile saved successfully.';resetTeam();await refreshTeam();await refreshEntries();
+ }catch(err){status.textContent=err.message}finally{btn.disabled=false}
+});
+$('#teamName').addEventListener('input',()=>{if(!teamFields.id.value)teamFields.slug.value=teamFields.name.value.toLowerCase().normalize('NFKD').replace(/[^a-z0-9\s-]/g,'').trim().replace(/\s+/g,'-').replace(/-+/g,'-')});

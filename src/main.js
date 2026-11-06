@@ -116,8 +116,14 @@ const menuToggle=document.querySelector(".menu-toggle");menuToggle?.addEventList
       if(list){list.replaceChildren();for(const line of entry.body.split('\n').map(x=>x.trim()).filter(Boolean)){const li=document.createElement('li');li.textContent=line;list.append(li)}}
      }
     }else if(entry.body.trim()){
-     const list=content.querySelector('ul');
-     if(list){list.replaceChildren();for(const line of entry.body.split('\n').map(x=>x.trim()).filter(Boolean)){const li=document.createElement('li');li.textContent=line;list.append(li)}}
+     let info;try{info=JSON.parse(entry.body)}catch{info={specialisations:entry.body.split('\n')}}
+     if(info&&typeof info==='object'){
+      const headings=[['specialisations','Areas of Specialisation'],['qualifications','Academic & Professional Qualifications'],['affiliations','Professional Affiliations & Accreditation']];
+      content.querySelectorAll('h2,ul').forEach(el=>el.remove());
+      const before=content.querySelector('p');
+      for(const [key,label] of headings){const values=Array.isArray(info[key])?info[key]:[];if(!values.length)continue;const h=document.createElement('h2');h.textContent=label;const ul=document.createElement('ul');for(const value of values){const li=document.createElement('li');li.textContent=value;ul.append(li)}content.insertBefore(h,before);content.insertBefore(ul,before)}
+      if(info.biography){const p=document.createElement('p');p.textContent=info.biography;content.insertBefore(p,before)}
+     }
     }
    }
    document.title=(entry.seo_title||entry.title)+' | Crest Crown Attorneys';
@@ -125,8 +131,19 @@ const menuToggle=document.querySelector(".menu-toggle");menuToggle?.addEventList
    if(meta)meta.content=entry.seo_description||entry.summary||entry.title;
   }
   const kinds=path==='/practice-areas'?['practice']:path==='/team'?['team']:path==='/insights'?['post']:[];
+  if(path==='/team'){
+   const grid=main.querySelector('.grid');
+   if(grid){for(const entry of entries.filter(e=>e.kind==='team'&&!team.some(t=>t.slug===e.slug))){
+    const article=document.createElement('article');article.className='card team-card';
+    if(entry.image_url){const image=document.createElement('img');image.src=entry.image_url;image.alt=entry.title;image.loading='lazy';image.style.cssText='width:100%;height:245px;object-fit:cover';article.append(image)}
+    const h=document.createElement('h2');const a=document.createElement('a');a.href='/team/'+entry.slug;a.textContent=entry.title;h.append(a);
+    const role=document.createElement('p');role.className='team-role';role.textContent=entry.summary;
+    const more=document.createElement('a');more.href=a.href;more.textContent='View full profile →';
+    article.append(h,role,more);grid.append(article);
+   }}
+  }
   if(!kinds.length)return;
-  const items=entries.filter(e=>kinds.includes(e.kind)&&!(e.kind==='team'&&team.some(t=>t.slug===e.slug))&&!(e.kind==='practice'&&practices.some(p=>p[1]===e.slug)));if(!items.length)return;
+  const items=entries.filter(e=>kinds.includes(e.kind)&&!(e.kind==='team'&&team.some(t=>t.slug===e.slug))&&!(e.kind==='practice'&&practices.some(p=>p[1]===e.slug)));if(!items.length||path==='/team')return;
   const section=document.createElement('section');section.className='wrap section';
   const h=document.createElement('h2');h.textContent='Latest '+(kinds[0]==='post'?'Articles':kinds[0]==='team'?'Team Profiles':'Practice Areas');section.append(h);
   const grid=document.createElement('div');grid.className='grid';
