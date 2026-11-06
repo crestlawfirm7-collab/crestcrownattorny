@@ -47,6 +47,21 @@ let entriesCache=[];
 const form=$('#entryForm'),fields={id:$('#entryId'),kind:$('#kind'),slug:$('#slug'),title:$('#entryTitle'),summary:$('#summary'),body:$('#entryBody'),image_url:$('#imageUrl'),seo_title:$('#seoTitle'),seo_description:$('#seoDescription'),published:$('#published')};
 async function refreshEntries(){try{const result=await contentRequest();entriesCache=result.entries;const root=$('#entries');root.replaceChildren();for(const entry of entriesCache){const item=document.createElement('div');item.className='item';const h=document.createElement('h3');h.textContent=entry.title;const meta=document.createElement('p');meta.textContent=entry.kind+' / '+entry.slug+' — '+(entry.published?'Published':'Draft');const edit=document.createElement('button');edit.textContent='Edit';edit.onclick=()=>{for(const [key,input] of Object.entries(fields))input.type==='checkbox'?input.checked=!!entry[key]:input.value=entry[key]??'';form.scrollIntoView({behavior:'smooth'})};const del=document.createElement('button');del.textContent='Delete';del.onclick=async()=>{if(!confirm('Permanently delete this entry?'))return;try{await contentRequest('DELETE',{id:entry.id});await refreshEntries()}catch(e){status.textContent=e.message}};item.append(h,meta,edit,del);root.append(item)}if(!entriesCache.length)root.textContent='No entries yet.'}catch(e){status.textContent=e.message}}
 form.addEventListener('submit',async e=>{e.preventDefault();const data={};for(const [key,input] of Object.entries(fields))data[key]=input.type==='checkbox'?input.checked:input.value;try{await contentRequest('POST',data);form.reset();fields.id.value='';status.textContent='Entry saved.';await refreshEntries()}catch(err){status.textContent=err.message}});
+$('#editBuiltIn').onclick=()=>{
+ const selected=$('#builtInSelect').value;
+ if(!selected){status.textContent='Choose a practice area or team member first.';return}
+ const [kind,slug]=selected.split(':');
+ const existing=entriesCache.find(e=>e.kind===kind&&e.slug===slug);
+ form.reset();
+ if(existing){for(const [key,input] of Object.entries(fields))input.type==='checkbox'?input.checked=!!existing[key]:input.value=existing[key]??''}
+ else{
+  fields.kind.value=kind;fields.slug.value=slug;
+  fields.title.value=$('#builtInSelect').selectedOptions[0].textContent;
+  fields.published.checked=false;
+ }
+ form.scrollIntoView({behavior:'smooth',block:'start'});
+ status.textContent=existing?'Existing published content loaded. Review before saving.':'Original page selected. Enter the approved text and publish to override the existing content.';
+};
 $('#resetEntry').onclick=()=>{form.reset();fields.id.value=''};
 $('#loadEnquiries').onclick=async()=>{try{const response=await fetch('/api/enquiries');if(!response.ok)throw Error('Unable to retrieve enquiries');const data=await readApiJson(response);const root=$('#enquiries');root.replaceChildren();for(const e of data.enquiries){const block=document.createElement('div');block.className='item';for(const value of [e.created_at+' • '+e.name+' • '+e.email,e.topic,e.message]){const p=document.createElement('p');p.textContent=value;block.append(p)}root.append(block)}if(!data.enquiries.length)root.textContent='No enquiries yet.'}catch(e){status.textContent=e.message}};
 

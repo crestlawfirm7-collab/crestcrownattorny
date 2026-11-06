@@ -70,7 +70,7 @@ const menuToggle=document.querySelector(".menu-toggle");menuToggle?.addEventList
   const match=entries.find(e=>e.kind==='page'&&('/'+e.slug)===path||e.kind==='practice'&&'/practice-areas/'+e.slug===path||e.kind==='team'&&'/team/'+e.slug===path||e.kind==='post'&&'/insights/'+e.slug===path);
   const main=document.querySelector('main');if(!main)return;
   if(path.startsWith('/insights/')&&!match){main.innerHTML='<section class="wrap section"><h1>Article not available</h1><p>This article may be unpublished or its link may have changed.</p><a href="/insights">Browse legal insights →</a></section>';return}
-  if(match && (match.kind!=='practice' || (match.body||'').trim().length>120)){
+  if(match && match.kind!=='practice' && match.kind!=='team'){
    main.replaceChildren();
    const section=document.createElement('section');section.className='wrap section';
    const h=document.createElement('h1');h.textContent=match.title;
@@ -81,6 +81,48 @@ const menuToggle=document.querySelector(".menu-toggle");menuToggle?.addEventList
    document.title=(match.seo_title||match.title)+' | Crest Crown Attorneys';
    document.querySelector('meta[name="description"]').content=match.seo_description||match.summary||match.title;
    return;
+  }
+  // Published CMS records override built-in practice/team copy and imagery in-place.
+  // Retaining the structured page template preserves navigation, FAQs and enquiry CTAs.
+  for(const entry of entries.filter(e=>e.published&&(e.kind==='practice'||e.kind==='team'))){
+   const base=entry.kind==='practice'?'/practice-areas/':'/team/';
+   const url=base+entry.slug;
+   document.querySelectorAll('a[href="'+url+'"]').forEach(a=>{
+    if(a.closest('h2,h3'))a.textContent=entry.title;
+    const card=a.closest('.visual-card,.team-card');
+    if(card){
+     const description=card.querySelector('.visual-card-body p,.team-role');
+     if(description&&entry.summary)description.textContent=entry.summary;
+     const image=card.querySelector('img');
+     if(image&&entry.image_url){image.src=entry.image_url;image.alt=entry.title}
+     if(entry.kind==='team'&&entry.image_url){
+      const avatar=card.querySelector('.team-avatar');
+      if(avatar){const img=document.createElement('img');img.src=entry.image_url;img.alt=entry.title;img.loading='lazy';img.style.cssText='width:100%;height:100%;object-fit:cover';avatar.replaceChildren(img);avatar.style.cssText='width:100%;height:210px;overflow:hidden;border-radius:0'}
+     }
+    }
+   });
+   if(path!==url)continue;
+   const hero=main.querySelector('.intro');
+   if(hero){const h=hero.querySelector('h1'),p=hero.querySelector('.lead');if(h)h.textContent=entry.title;if(p&&entry.summary)p.textContent=entry.summary}
+   const content=main.querySelector('.practice-detail>div,.profile-detail');
+   if(content){
+    if(entry.kind==='practice'){
+     const image=content.querySelector('.detail-photo');
+     if(image&&entry.image_url){image.src=entry.image_url;image.alt=entry.title}
+     const para=content.querySelector('h2+p');
+     if(para&&entry.summary)para.textContent=entry.summary;
+     if(entry.body.trim()){
+      const list=content.querySelector('.support-list');
+      if(list){list.replaceChildren();for(const line of entry.body.split('\n').map(x=>x.trim()).filter(Boolean)){const li=document.createElement('li');li.textContent=line;list.append(li)}}
+     }
+    }else if(entry.body.trim()){
+     const list=content.querySelector('ul');
+     if(list){list.replaceChildren();for(const line of entry.body.split('\n').map(x=>x.trim()).filter(Boolean)){const li=document.createElement('li');li.textContent=line;list.append(li)}}
+    }
+   }
+   document.title=(entry.seo_title||entry.title)+' | Crest Crown Attorneys';
+   const meta=document.querySelector('meta[name="description"]');
+   if(meta)meta.content=entry.seo_description||entry.summary||entry.title;
   }
   const kinds=path==='/practice-areas'?['practice']:path==='/team'?['team']:path==='/insights'?['post']:[];
   if(!kinds.length)return;
