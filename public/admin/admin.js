@@ -82,7 +82,7 @@ document.querySelectorAll('[data-preview-for]').forEach(img=>{const field=docume
 
 
 /* Dedicated team editor, backed by the existing authenticated CMS and media API. */
-const teamFields={id:$('#teamId'),name:$('#teamName'),slug:$('#teamSlug'),role:$('#teamRole'),qualifications:$('#teamQualifications'),affiliations:$('#teamAffiliations'),specialisations:$('#teamSpecialisations'),biography:$('#teamBiography'),image:$('#teamImageUrl'),seoTitle:$('#teamSeoTitle'),seoDescription:$('#teamSeoDescription'),published:$('#teamPublished')};
+const teamFields={id:$('#teamId'),name:$('#teamName'),slug:$('#teamSlug'),role:$('#teamRole'),qualifications:$('#teamQualifications'),affiliations:$('#teamAffiliations'),specialisations:$('#teamSpecialisations'),biography:$('#teamBiography'),order:$('#teamOrder'),image:$('#teamImageUrl'),seoTitle:$('#teamSeoTitle'),seoDescription:$('#teamSeoDescription'),published:$('#teamPublished')};
 const originalTeam=[
  {slug:'glory-toritseju-kunu',name:'Glory Toritseju Kunu',role:'Legal Associate — Corporate Practice & Property Law'},
  {slug:'eloho',name:'Eloho',role:'Partner — Corporate, Regulatory & Dispute Resolution Practice'},
@@ -104,6 +104,7 @@ function editTeam(entry){
  teamFields.affiliations.value=(body.affiliations||[]).join('\n');
  teamFields.specialisations.value=(body.specialisations||[]).join('\n');
  teamFields.biography.value=body.biography||'';
+ teamFields.order.value=Number.isInteger(body.order)?body.order:50;
  teamFields.seoTitle.value=entry.seo_title||'';
  teamFields.seoDescription.value=entry.seo_description||'';
  teamFields.published.checked=!!entry.published;
@@ -117,12 +118,12 @@ async function refreshTeam(){
  for(const base of originalTeam){
   if(!records.some(x=>x.slug===base.slug))records.push({kind:'team',slug:base.slug,title:base.name,summary:base.role,body:'',published:0,image_url:''});
  }
- records.sort((a,b)=>a.title.localeCompare(b.title));
+ records.sort((a,b)=>{const order=x=>{const o=parseTeamBody(x.body).order;return Number.isInteger(o)?o:50};return order(a)-order(b)||a.title.localeCompare(b.title)});
  for(const entry of records){
   const row=document.createElement('div');row.className='item';
   if(entry.image_url){const img=document.createElement('img');img.src=entry.image_url;img.alt=entry.title;img.style.cssText='width:68px;height:75px;object-fit:cover;float:left;margin-right:14px';row.append(img)}
   const h=document.createElement('h3');h.textContent=entry.title;
-  const p=document.createElement('p');p.textContent=(entry.summary||'')+' • '+(entry.published?'Published':entry.id?'Draft':'Original site profile');
+  const p=document.createElement('p');p.textContent='Order '+(parseTeamBody(entry.body).order??50)+' • '+(entry.summary||'')+' • '+(entry.published?'Published':entry.id?'Draft':'Original site profile');
   const edit=document.createElement('button');edit.textContent='Edit';edit.onclick=()=>editTeam(entry);
   row.append(h,p,edit);
   if(entry.id){
@@ -140,7 +141,7 @@ $('#teamForm').addEventListener('submit',async e=>{
   let photo=teamFields.image.value;
   const file=$('#teamPhoto').files[0];
   if(file){const data=new FormData();data.append('image',await prepareSiteImage(file));const upload=await fetch('/api/media',{method:'POST',body:data,credentials:'same-origin'});photo=(await readApiJson(upload)).url}
-  const data={id:teamFields.id.value||undefined,kind:'team',slug:teamFields.slug.value.trim().toLowerCase(),title:teamFields.name.value.trim(),summary:teamFields.role.value.trim(),image_url:photo,seo_title:teamFields.seoTitle.value,seo_description:teamFields.seoDescription.value,published:teamFields.published.checked,body:JSON.stringify({qualifications:lines(teamFields.qualifications.value),affiliations:lines(teamFields.affiliations.value),specialisations:lines(teamFields.specialisations.value),biography:teamFields.biography.value.trim()})};
+  const data={id:teamFields.id.value||undefined,kind:'team',slug:teamFields.slug.value.trim().toLowerCase(),title:teamFields.name.value.trim(),summary:teamFields.role.value.trim(),image_url:photo,seo_title:teamFields.seoTitle.value,seo_description:teamFields.seoDescription.value,published:teamFields.published.checked,body:JSON.stringify({qualifications:lines(teamFields.qualifications.value),affiliations:lines(teamFields.affiliations.value),specialisations:lines(teamFields.specialisations.value),biography:teamFields.biography.value.trim(),order:Number(teamFields.order.value)})};
   await contentRequest('POST',data);status.textContent='Team profile saved successfully.';resetTeam();await refreshTeam();await refreshEntries();
  }catch(err){status.textContent=err.message}finally{btn.disabled=false}
 });

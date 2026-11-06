@@ -152,6 +152,19 @@ const menuToggle=document.querySelector(".menu-toggle");menuToggle?.addEventList
   const kinds=path==='/practice-areas'?['practice']:path==='/team'?['team']:path==='/insights'?['post']:[];
   if(path==='/team'){
    const grid=main.querySelector('.grid');
+   if(grid){
+    const orderBySlug=new Map();
+    for(const entry of entries.filter(e=>e.kind==='team')){
+     let data={};try{data=JSON.parse(entry.body)}catch{}
+     if(Number.isInteger(data.order))orderBySlug.set(entry.slug,data.order);
+    }
+    // Existing cards are sorted together with newly added CMS cards below.
+    grid.dataset.teamOrdering='enabled';
+    grid.__teamOrder=orderBySlug;
+   }
+  }
+  if(path==='/team'){
+   const grid=main.querySelector('.grid');
    if(grid){for(const entry of entries.filter(e=>e.kind==='team'&&!team.some(t=>t.slug===e.slug))){
     const article=document.createElement('article');article.className='card team-card';
     if(entry.image_url){const image=document.createElement('img');image.src=entry.image_url;image.alt=entry.title;image.loading='lazy';image.style.cssText='width:100%;height:245px;object-fit:cover';article.append(image)}
@@ -160,6 +173,16 @@ const menuToggle=document.querySelector(".menu-toggle");menuToggle?.addEventList
     const more=document.createElement('a');more.href=a.href;more.textContent='View full profile →';
     article.append(h,role,more);grid.append(article);
    }}
+  }
+  if(path==='/team'){
+   const grid=main.querySelector('.grid');
+   if(grid){
+    const cards=Array.from(grid.querySelectorAll('.team-card'));
+    const order=grid.__teamOrder||new Map();
+    const getSlug=card=>{const href=card.querySelector('a[href^="/team/"]')?.getAttribute('href')||'';return href.split('/').pop()};
+    cards.sort((a,b)=>(order.get(getSlug(a))??50)-(order.get(getSlug(b))??50));
+    grid.replaceChildren(...cards);
+   }
   }
   if(!kinds.length)return;
   const items=entries.filter(e=>kinds.includes(e.kind)&&!(e.kind==='team'&&team.some(t=>t.slug===e.slug))&&!(e.kind==='practice'&&practices.some(p=>p[1]===e.slug)));if(!items.length||path==='/team')return;
