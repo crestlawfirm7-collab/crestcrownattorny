@@ -41,7 +41,7 @@ $('#loadEnquiries').onclick=async()=>{try{const response=await fetch('/api/enqui
 
 
 
-const settingsKeys=["home_eyebrow","home_title","home_description","home_banner_url","home_highlight_title","home_highlight_body","about_intro","about_approach","practice_intro","team_intro","insights_intro","careers_intro","careers_body","contact_intro","contact_office","contact_email","contact_phone","footer_description","footer_disclaimer","brand_name","brand_logo_url","seo_home_title","seo_home_description"];
+const settingsKeys=["home_eyebrow","home_title","home_description","home_banner_url","home_highlight_title","home_highlight_body","about_intro","about_approach","practice_intro","team_intro","insights_intro","careers_intro","careers_body","contact_intro","contact_office","contact_email","contact_phone","contact_whatsapp","footer_description","footer_disclaimer","brand_name","brand_logo_url","seo_home_title","seo_home_description"];
 async function loadSettings(){try{const r=await fetch('/api/site-settings?admin=1',{credentials:'same-origin'});if(!r.ok)throw Error('Could not load website settings');const d=await r.json();for(const key of settingsKeys)$('#setting_'+key).value=d.settings?.[key]||''}catch(e){status.textContent=e.message}}
 $('#settingsForm').addEventListener('submit',async e=>{e.preventDefault();const settings={};for(const key of settingsKeys)settings[key]=$('#setting_'+key).value;try{const r=await fetch('/api/site-settings',{method:'PUT',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({settings})});const d=await r.json();if(!r.ok)throw Error(d.error||'Save failed');status.textContent='Website settings saved and published.'}catch(e){status.textContent=e.message}});
 
