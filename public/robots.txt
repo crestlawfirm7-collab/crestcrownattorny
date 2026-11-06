@@ -1,3 +1,5 @@
 User-agent: *
-Disallow: /
-# Development branch: remove block only after production review.
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Sitemap: https://crestcrownattorneys.com/sitemap.xml
