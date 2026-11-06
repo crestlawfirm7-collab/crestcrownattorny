@@ -10,7 +10,7 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const nav=[["Home","/"],["About","/about"],["Practice Areas","/practice-areas"],["Our Team","/team"],["Insights","/insights"],["Careers","/careers"],["Contact","/contact"]];
 const rawPath=decodeURI(location.pathname).replace(/\/$/,"")||"/";
 const path=({"/legal-insights":"/insights","/legal-insight":"/insights","/blog":"/insights","/blogs":"/insights","/articles":"/insights"})[rawPath]||rawPath.replace(/^\/(?:legal-insights|legal-insight|blog|blogs|articles)\//,"/insights/");
-const link=(url,text)=>'<a href="'+url+'">'+esc(text)+'</a>';
+const link=(url,text)=>{const active=url==='/'?path==='/':path===url||path.startsWith(url+'/');return '<a href="'+url+'"'+(active?' class="nav-current" aria-current="page"':'')+'>'+esc(text)+'</a>';};
 const card=(title,desc,url)=>'<article class="card"><h3>'+link(url,title)+'</h3><p>'+esc(desc)+'</p>'+link(url,"Learn more →")+'</article>';
 const intro=(tag,title,lead)=>'<section class="intro"><div class="wrap"><p class="eyebrow">'+esc(tag)+'</p><h1>'+esc(title)+'</h1><p class="lead">'+esc(lead)+'</p></div></section>';
 const practiceCards=()=>'<div class="grid practice-grid">'+practices.map((p,i)=>'<article class="card visual-card"><a href="/practice-areas/'+p[1]+'"><img loading="lazy" src="'+practiceImages[i]+'" alt="'+esc(p[0])+'"></a><div class="visual-card-body"><h3>'+link('/practice-areas/'+p[1],p[0])+'</h3><p>'+esc(p[2])+'</p>'+link('/practice-areas/'+p[1],'Explore service →')+'</div></article>').join('')+'</div>';
