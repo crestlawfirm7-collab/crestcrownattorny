@@ -174,3 +174,6 @@ header .header-cta{flex:0 0 auto;padding:12px 13px}
 @media(max-width:400px){header .header{padding-left:14px;padding-right:14px}header .brand{gap:8px;font-size:13px}header .brand-emblem{width:40px;height:40px;flex-basis:40px}header .brand-wordmark>span{font-size:9px;letter-spacing:.12em}header .brand-wordmark small{font-size:7px}header .menu-toggle{padding:7px 10px}}
 /* Prevent other content from extending the mobile viewport. */
 img,svg,video{max-width:100%}.grid>*{min-width:0}h1,h2,h3,p{overflow-wrap:break-word}
+
+/* Direct legal consultation options */
+.direct-consultation{display:flex;flex-wrap:wrap;gap:14px;margin:25px 0}.consult-action{display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:14px 22px;border-radius:5px;text-decoration:none;font-weight:700;font-size:14px}.consult-wa{background:#176b48;color:#fff}.consult-wa:hover{background:#11553a;color:#fff}.consult-email{background:#0b2948;color:#fff}.consult-email:hover{background:#173f66;color:#fff}.consult-privacy{max-width:700px;font-size:13px;color:#687584;line-height:1.7}@media(max-width:480px){.direct-consultation{flex-direction:column}.direct-consultation .consult-action{width:100%}}
