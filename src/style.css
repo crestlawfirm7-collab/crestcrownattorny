@@ -38,3 +38,24 @@ header{background:#0c2037}.header{max-width:1360px;min-height:84px;gap:24px;flex
 
 /* Lawyer profile presentation */
 .team-card h2{font:26px Georgia,serif;margin:10px 0}.team-card h2 a{color:#10243b}.team-role{color:#8a602a;font-weight:700}.team-avatar{width:64px;height:64px;border-radius:50%;background:#10243b;color:#e8c488;display:grid;place-items:center;font:24px Georgia,serif}.profile-detail{max-width:1000px}.profile-detail h2{font:30px Georgia,serif;margin-top:30px}.profile-detail li{padding:8px 0;border-bottom:1px solid #e7e0d5;line-height:1.65}.profile-detail ul{padding-left:25px}
+
+/* Reference collage: navy/gold/white editorial law-firm layout */
+:root{--navy:#092443;--gold:#d7a84b;--cream:#fffaf0}
+body{background:#fff;color:#182c43}h1,h2,h3{letter-spacing:-.025em}
+header{background:#071f3b}.header{min-height:76px}.preview-notice{font-size:9px;padding:4px 10px}
+.reference-hero{grid-template-columns:51% 49%;min-height:540px;background:#071e39}
+.reference-hero .hero-copy{background:linear-gradient(90deg,#071a33 0%,#0b284a 75%,#0b284ae8);padding:70px max(35px,calc((100vw - 1200px)/2))}
+.reference-hero .hero-photo{min-height:540px;background:linear-gradient(90deg,#071e39aa,#071e3922),url('https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=1500&q=85') center/cover}
+.reference-hero h1{font-size:clamp(39px,4vw,61px);line-height:1.11}.reference-hero h1 span{color:#f3d293}.reference-hero .hero-lead{font-size:15px}
+.reference-hero .btn-gold,.btn-gold{background:#e4b653;color:#0a2542;border:0;text-decoration:none;padding:14px 20px;border-radius:3px;font-weight:700;display:inline-block}
+.btn-navy{background:#092443;color:white;text-decoration:none;padding:14px 22px;border-radius:3px;display:inline-block}
+.trust-strip{border-bottom:1px solid #e8e4dc;background:#fff}.trust-strip .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-top:18px;padding-bottom:18px;color:#31445b;font-size:13px;font-weight:650}.trust-strip span:first-letter{color:#c99839}
+.center-heading,.center-lead{text-align:center;margin-left:auto;margin-right:auto}.center-heading{margin:10px auto 12px}.section>.eyebrow{text-align:center}.center-link{text-align:center;margin:34px 0 0}
+.practice-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.visual-card{padding:0;border-radius:2px;overflow:hidden;box-shadow:0 5px 20px #071d3512}.visual-card img{display:block;width:100%;height:155px;object-fit:cover}.visual-card-body{padding:18px}.visual-card h3{font-size:19px;line-height:1.2;margin:0 0 10px}.visual-card p{font-size:13px;color:#59697b;margin:0 0 15px}.visual-card-body>a{font-size:12px;font-weight:700;text-transform:uppercase;color:#9e752e;text-decoration:none}
+.about-feature{display:grid;grid-template-columns:1fr 1fr;gap:0;align-items:stretch}.about-photo{min-height:390px;background:url('https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1100&q=85') center/cover}.about-copy{background:#092443;color:white;padding:48px}.about-copy h2{font:clamp(29px,3vw,42px)/1.16 Georgia,serif}.about-copy li{margin:12px 0}.about-copy ul{padding-left:20px;margin-bottom:30px}.about-copy p{color:#e1e8ef}
+.team-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.team-card{padding:0;overflow:hidden;border-radius:2px}.team-photo{height:220px;background:linear-gradient(135deg,#153555,#6e8090);display:grid;place-items:center;color:#d6b97d;font:64px Georgia,serif}.team-card>.eyebrow,.team-card>h2,.team-card>p,.team-card>a{margin-left:20px;margin-right:20px}.team-card>a{display:inline-block;margin-bottom:22px}
+.insights-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.insights-intro{text-align:center;margin-bottom:30px}
+.practice-detail{display:grid;grid-template-columns:minmax(0,2fr) minmax(240px,1fr);gap:45px}.detail-photo{width:100%;height:290px;object-fit:cover}.practice-detail li{padding:12px 0;border-bottom:1px solid #e2e2e2}.consult-aside{align-self:start;background:#f6f1e6;padding:28px}.consult-aside h2{font-size:28px}
+.article-featured{width:100%;max-height:460px;object-fit:cover;border-radius:3px;margin:25px 0}.cms-card-photo{width:100%;height:170px;object-fit:cover;border-radius:3px}
+@media(max-width:1000px){.practice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.reference-hero{grid-template-columns:1fr 1fr}.reference-hero .hero-copy{padding:45px 35px}}
+@media(max-width:700px){.reference-hero{grid-template-columns:1fr}.reference-hero .hero-photo{min-height:250px}.reference-hero .hero-copy{padding:55px 24px}.practice-grid,.team-grid,.insights-grid,.about-feature,.practice-detail{grid-template-columns:1fr}.trust-strip .wrap{display:grid;grid-template-columns:1fr 1fr}.about-copy{padding:30px}.visual-card img{height:190px}.header{flex-wrap:wrap}}
