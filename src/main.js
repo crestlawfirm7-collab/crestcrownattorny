@@ -69,6 +69,25 @@ const menuToggle=document.querySelector(".menu-toggle");menuToggle?.addEventList
   const routes={page:'',practice:'/practice-areas/',team:'/team/',post:'/insights/'};
   const match=entries.find(e=>e.kind==='page'&&('/'+e.slug)===path||e.kind==='practice'&&'/practice-areas/'+e.slug===path||e.kind==='team'&&'/team/'+e.slug===path||e.kind==='post'&&'/insights/'+e.slug===path);
   const main=document.querySelector('main');if(!main)return;
+  if(match&&match.kind==='team'&&!team.some(t=>t.slug===match.slug)){
+   main.replaceChildren();
+   const section=document.createElement('section');section.className='wrap section profile-detail';
+   const heading=document.createElement('h1');heading.textContent=match.title;section.append(heading);
+   const role=document.createElement('p');role.className='lead';role.textContent=match.summary;section.append(role);
+   if(match.image_url){const img=document.createElement('img');img.src=match.image_url;img.alt=match.title;img.className='article-featured';img.loading='lazy';section.append(img)}
+   let info;try{info=JSON.parse(match.body)}catch{info={biography:match.body}}
+   if(info.biography){const p=document.createElement('p');p.textContent=info.biography;section.append(p)}
+   for(const [key,label] of [['specialisations','Areas of Specialisation'],['qualifications','Academic & Professional Qualifications'],['affiliations','Professional Affiliations & Accreditation']]){
+    if(!Array.isArray(info[key])||!info[key].length)continue;
+    const h=document.createElement('h2');h.textContent=label;const ul=document.createElement('ul');
+    for(const item of info[key]){const li=document.createElement('li');li.textContent=item;ul.append(li)}
+    section.append(h,ul);
+   }
+   const contact=document.createElement('a');contact.href='/contact';contact.textContent='Contact Crest Crown Attorneys →';section.append(contact);main.append(section);
+   document.title=(match.seo_title||match.title)+' | Crest Crown Attorneys';
+   const meta=document.querySelector('meta[name="description"]');if(meta)meta.content=match.seo_description||match.summary||match.title;
+   return;
+  }
   if(path.startsWith('/insights/')&&!match){main.innerHTML='<section class="wrap section"><h1>Article not available</h1><p>This article may be unpublished or its link may have changed.</p><a href="/insights">Browse legal insights →</a></section>';return}
   if(match && match.kind!=='practice' && match.kind!=='team'){
    main.replaceChildren();
